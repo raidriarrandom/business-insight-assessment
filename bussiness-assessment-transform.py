@@ -91,4 +91,3 @@ sales_by_loyalty_df.write.mode("overwrite").parquet("s3://business-insight-asses
 sales_by_holiday_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/sales_by_holiday/")
 
 job.commit()
-

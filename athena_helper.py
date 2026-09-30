@@ -2,6 +2,7 @@ import boto3
 import time
 import pandas as pd
 
+
 def run_athena_query(query, database="business_assessment_db", region="us-west-1"):
     client = boto3.client("athena", region_name=region)
 
@@ -29,5 +30,3 @@ def run_athena_query(query, database="business_assessment_db", region="us-west-1
         rows.append([field.get("VarCharValue", None) for field in row["Data"]])
 
     return pd.DataFrame(rows, columns=columns)
-
-

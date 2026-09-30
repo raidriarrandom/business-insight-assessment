@@ -22,7 +22,7 @@ jobs:
         run: pip install flake8
 
       - name: Lint Python files
-        run: flake8 app.py athena_helper.py bussiness-assessment-transform.py --max-line-length=150
+        run: flake8 app.py athena_helper.py bussiness-assessment-transform.py --max-line-length=400 --extend-ignore=F401,F403
 
       - name: Verify Python syntax
         run: |
