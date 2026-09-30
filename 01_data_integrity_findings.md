@@ -19,6 +19,10 @@
 
 5. **144 rows have implausibly high `ITEM_PRICE` values (> $100), most paired with unusually round, large `ITEM_QUANTITY` values (e.g., 500, 300, 213).** Examples: "Korean Kimchi" at $5,000 × 500 units = $2.5M for a single line item; "Espresso - Double" at $1,125 × 500 units = $562,500. Real price distribution: median $8, 99.9th percentile $78 — these 144 rows are clear outliers, not real transactions. Left unfiltered, they would completely corrupt the CLV metric (a handful of users would show millions of dollars in "lifetime value" from a single anomalous row). **Decision: excluded from the CLV calculation specifically** (kept in the raw/enriched dataset, not deleted from the source) using a threshold of `ITEM_PRICE <= 100`. Discovered during Glue transformation while sanity-checking CLV output — not caught in the original manual file inspection, since that pass only checked for prices ≤ 0, not implausibly high ones.
 
+6. **98 rows across 3 restaurants have `ITEM_CATEGORY` values corrupted by an embedded admin/menu-management URL.** Affected categories: `BBQ Plates` (restaurant `622289bc6863d23d066d56ff`), `Drip Coffee` (restaurant `62f2ce9824813746ce6f5140`), and `Kid's` (restaurant `6054db3295b70198148b456d`). This isn't a simple appended suffix — in the `Drip Coffee` case, the URL is spliced directly into the middle of the word (`Drip C` + URL + `offee`), confirming the corruption is a mid-string insertion, not concatenation at the end. Each affected restaurant's own admin URL appears embedded in its own corrupted rows, suggesting a per-restaurant export bug in whatever menu system generated this data, rather than random noise. **Decision:** left as-is in the raw/enriched dataset (not deleted from source, consistent with how other findings are handled), visible directly in the `sales_by_category` dashboard rather than silently cleaned.
+
+7. **No discount or promotional-price field exists anywhere in the source data.** `order_items` and `order_item_options` were checked column by column — there is no `DISCOUNT`, `PROMO_CODE`, or original-vs-sale-price pair anywhere in either table. **This makes "Pricing and Discount Effectiveness" (one of the six required business insight metrics) impossible to calculate from the data actually provided.** This is reported as a structural data gap, the same category as finding #2 (the missing date coverage) — not something that can be worked around by inventing a proxy metric. The dashboard for this metric area documents the gap directly rather than fabricating a chart from data that doesn't exist.
+
 ## Minor issues
 - 1 row in `order_items` has a blank `LINEITEM_ID`.
 - 1 row in `order_items` has `ITEM_QUANTITY` ≤ 0.
@@ -26,14 +30,4 @@
 
 ## Note on tooling accuracy
 An initial pass using `awk -F','` and `wc -l` reported several issues that turned out to be false positives — e.g. a false "3,900 rows with bad price," a false "12 malformed timestamps." Root cause: at least one row contains a quoted CSV field with a literal embedded newline (`"MANDARIN CARDAMOM\nJUICE"` as an `ITEM_NAME`), which is valid CSV per spec but breaks naive line-based parsing by splitting one logical row into two physical lines. All numbers above are from a proper CSV-aware parse (Python's `csv` module) and have been verified against the raw file content directly.
-
-## 98 rows across 3 restaurants have `ITEM_CATEGORY` values corrupted by an embedded admin/menu-management URL.** Affected categories: `BBQ
-  Plates` (restaurant `622289bc6863d23d066d56ff`), `Drip Coffee` (restaurant `62f2ce9824813746ce6f5140`), and `Kid's` (restaurant
-  `6054db3295b70198148b456d`). This isn't a simple appended suffix — in the `Drip Coffee` case, the URL is spliced directly into the middle of the
-  word (`Drip C` + URL + `offee`), confirming the corruption is a mid-string insertion, not concatenation at the end. Each affected restaurant's own
-  admin URL appears embedded in its own corrupted rows, suggesting a per-restaurant export bug in whatever menu system generated this data, rather
-  than random noise. **Decision:** left as-is in the raw/enriched dataset (not deleted from source, consistent with how other findings are handled),
-  but noted here since it produces 3 ugly category labels in the `sales_by_category` metric rather than the clean `BBQ Plates`, `Drip Coffee`, and
-  `Kid's` values. [Your call: decide whether to clean these 3 specific values before the `sales_by_category` aggregation, or leave them as documented
-  known issues — state whichever you choose.]
 

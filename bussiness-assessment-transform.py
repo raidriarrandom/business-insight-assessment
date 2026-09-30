@@ -5,6 +5,7 @@ from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
 from pyspark.sql import functions as F
+from pyspark.sql import Window
 
 args = getResolvedOptions(sys.argv, ['JOB_NAME'])
 
@@ -60,10 +61,6 @@ clv_df.write.mode("overwrite").parquet("s3://business-insight-assessment-4995020
 
 order_items_priced.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/order_items_enriched/")
 
-order_frequency_df = order_items_valid_user.groupBy("USER_ID").agg(
-    F.countDistinct("ORDER_ID").alias("ORDER_FREQUENCY")
-)
-
 sales_by_category_df = order_items_valid_user.groupBy("ITEM_CATEGORY").agg(
     F.sum("LINE_TOTAL").alias("TOTAL_SALES")
 )
@@ -72,22 +69,55 @@ sales_by_loyalty_df = order_items_valid_user.groupBy("IS_LOYALTY").agg(
     F.sum("LINE_TOTAL").alias("TOTAL_SALES")
 )
 
-order_items_with_date = order_items_valid_user.join(
-    date_dim_df,
-    F.to_date(order_items_valid_user["CREATION_TIME_UTC"]) == date_dim_df["date_key"],
-    how="inner"
+
+
+top_locations_df = order_items_valid_user.groupBy("RESTAURANT_ID").agg(
+    F.sum("LINE_TOTAL").alias("TOTAL_SALES"),
+    F.countDistinct("ORDER_ID").alias("TOTAL_ORDERS")
 )
 
-sales_by_holiday_df = order_items_with_date.groupBy("is_holiday").agg(
+sales_trend_df = order_items_valid_user.withColumn(
+    "ORDER_MONTH", F.date_format(F.to_date(F.col("CREATION_TIME_UTC")), "yyyy-MM")
+).groupBy("ORDER_MONTH").agg(
     F.sum("LINE_TOTAL").alias("TOTAL_SALES")
+).orderBy("ORDER_MONTH")
+
+clv_with_percentile = clv_df.withColumn(
+    "CLV_PERCENTILE", F.percent_rank().over(Window.orderBy("CUSTOMER_LIFETIME_VALUE"))
 )
 
-order_frequency_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/order_frequency/")
+customer_segmentation_df = clv_with_percentile.withColumn(
+    "SEGMENT",
+    F.when(F.col("CLV_PERCENTILE") >= 0.8, "High Value")
+     .when(F.col("CLV_PERCENTILE") >= 0.5, "Medium Value")
+     .otherwise("Low Value")
+).select("USER_ID", "CUSTOMER_LIFETIME_VALUE", "SEGMENT")
+
+reference_date = order_items_valid_user.agg(
+    F.max(F.to_date(F.col("CREATION_TIME_UTC"))).alias("max_date")
+).collect()[0]["max_date"]
+
+churn_indicator_df = clv_df.withColumn(
+    "LAST_ORDER_DATE_PARSED", F.to_date(F.col("LAST_ORDER_DATE"))
+).withColumn(
+    "DAYS_SINCE_LAST_ORDER", F.datediff(F.lit(reference_date), F.col("LAST_ORDER_DATE_PARSED"))
+).withColumn(
+    "CHURN_STATUS",
+    F.when(F.col("DAYS_SINCE_LAST_ORDER") > 90, "Churned")
+     .when(F.col("DAYS_SINCE_LAST_ORDER") > 30, "At Risk")
+     .otherwise("Active")
+).select("USER_ID", "DAYS_SINCE_LAST_ORDER", "CHURN_STATUS")
 
 sales_by_category_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/sales_by_category/")
 
 sales_by_loyalty_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/sales_by_loyalty/")
 
-sales_by_holiday_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/sales_by_holiday/")
+top_locations_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/top_locations/")
+
+sales_trend_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/sales_trend/")
+
+customer_segmentation_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/customer_segmentation/")
+
+churn_indicator_df.write.mode("overwrite").parquet("s3://business-insight-assessment-499502048569/curated/churn_indicator/")
 
 job.commit()
