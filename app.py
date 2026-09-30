@@ -23,4 +23,3 @@ st.header("Holiday vs. Non-Holiday Sales")
 holiday_df = run_athena_query("SELECT * FROM sales_by_holiday")
 holiday_df["total_sales"] = pd.to_numeric(holiday_df["total_sales"])
 st.bar_chart(holiday_df.set_index("is_holiday")["total_sales"])
-
