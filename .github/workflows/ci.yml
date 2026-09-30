@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+job:
+  lint-and-verify:
+    run-ons: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up pythin
+        uses: actions/setup@v5
+
+      - name: Install lint tools
+        run: pip isntall flake8
+
+      - name: Lint Python files
+        run: flake8 app.py athena_helper.py bussiness-assessment-transform.py --max-line-length=150
+
+      - name: Verify Python syntax
+        run: |
+          python -c "import ast; ast.parse(open('bussiness-assessment-transform.py').read())"
+          python -c "import ast; ast.parse(open('app.py').read())"
+          python -c "import ast; ast.parse(open('athena_helper.py').read())"
