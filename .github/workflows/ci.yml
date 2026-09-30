@@ -6,18 +6,20 @@ on:
   pull_request:
     branches: [main]
 
-job:
+jobs:
   lint-and-verify:
-    run-ons: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up pythin
-        uses: actions/setup@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install lint tools
-        run: pip isntall flake8
+        run: pip install flake8
 
       - name: Lint Python files
         run: flake8 app.py athena_helper.py bussiness-assessment-transform.py --max-line-length=150
