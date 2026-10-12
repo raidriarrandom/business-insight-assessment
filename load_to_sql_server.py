@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from sqlalchemy import create_engine, text
 import urllib
@@ -6,7 +7,7 @@ import time
 server = "database-1.chek4ea2izsv.us-west-1.rds.amazonaws.com"
 database = "BusinessAssessmentRDS"
 username = "admin"
-password = "RE60as87$&"
+password = os.environ["RDS_PASSWORD"]  # set before running: export RDS_PASSWORD='...'
 
 params = urllib.parse.quote_plus(
     f"DRIVER={{ODBC Driver 18 for SQL Server}};"

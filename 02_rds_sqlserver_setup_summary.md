@@ -1,6 +1,6 @@
 # RDS SQL Server Setup — Summary
 
-> Condensed from the raw transcript (`02_rds_sqlserver_setup_transcript.md`). If anything here is ambiguous, check the raw transcript, not this summary.
+> Condensed from the raw transcript of the video.
 
 Video tutorial walking through creating a SQL Server RDS instance on AWS, connecting via SSMS, and loading CSV flat files into a new database for a data pipeline.
 

@@ -69,8 +69,6 @@ sales_by_loyalty_df = order_items_valid_user.groupBy("IS_LOYALTY").agg(
     F.sum("LINE_TOTAL").alias("TOTAL_SALES")
 )
 
-
-
 top_locations_df = order_items_valid_user.groupBy("RESTAURANT_ID").agg(
     F.sum("LINE_TOTAL").alias("TOTAL_SALES"),
     F.countDistinct("ORDER_ID").alias("TOTAL_ORDERS")

@@ -1,6 +1,6 @@
 # Business Insight Assessment — Requirements Summary
 
-> Condensed from the raw transcript (`00_requirements_call_transcript.md`). If anything here is ambiguous, check the raw transcript, not this summary.
+> Condensed from the raw transcript of the video.
 
 Walkthrough of a business insight assessment: build a daily batch data engineering pipeline on AWS from SQL Server CSVs, using PySpark, to calculate customer lifetime value and related metrics, delivered via Streamlit dashboards with CI/CD.
 
