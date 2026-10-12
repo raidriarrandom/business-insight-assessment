@@ -1,0 +1,29 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "StartReplicationTask",
+    "States": {
+        "StartReplicationTask": {
+            "Type": "Task",
+            "Arguments": {
+                "ReplicationTaskArn": "arn:aws:dms:us-west-1:499502048569:task:CZWUKZL26FFTTDGT5RMJCVSU7E",
+                "StartReplicationTaskType": "reload-target"
+            },
+            "Resource": "arn:aws:states:::aws-sdk:databasemigration:startReplicationTask",
+            "Next": "Wait"
+        },
+        "Wait": {
+            "Type": "Wait",
+            "Seconds": 300,
+            "Next": "Glue StartJobRun"
+        },
+        "Glue StartJobRun": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::glue:startJobRun",
+            "Arguments": {
+                "JobName": "bussiness-assessment-transform"
+            },
+            "End": true
+        }
+    },
+    "QueryLanguage": "JSONata"
+}

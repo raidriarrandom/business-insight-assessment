@@ -1,0 +1,7 @@
+{
+    "Name": "business-assessment-daily-trigger",
+    "ScheduleExpression": "cron(0 6 * * ? *)",
+    "Timezone": "America/Los_Angeles",
+    "State": "ENABLED",
+    "Target": "arn:aws:states:us-west-1:499502048569:stateMachine:bussiness-assessment-daily-pipeline"
+}
